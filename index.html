@@ -210,14 +210,15 @@
     }
 
 #celebrateMsg{
-  font-weight: 800;
+  font-weight: 900;
   display: inline-block;
-  animation: pulsePop 1.2s ease-in-out infinite;
+  animation: pulsePop 0.9s ease-in-out infinite;
+  transform-origin: center;
 }
 
 @keyframes pulsePop{
   0%   { transform: scale(1); }
-  45%  { transform: scale(1.08); }
+  40%  { transform: scale(1.12); }
   70%  { transform: scale(0.98); }
   100% { transform: scale(1); }
 }   
@@ -362,29 +363,36 @@
     function makeConfetti(mode = "rect"){
   confettiMode = mode;
 
-  const colors = ['#ff4d6d','#ffafcc','#ffd166','#06d6a0','#4cc9f0','#b5179e','#f72585','#fb7185'];
+  const rectColors  = ['#ff4d6d','#ffafcc','#ffd166','#06d6a0','#4cc9f0','#b5179e','#f72585','#fb7185'];
+  const heartColors = ['#ff4d6d', '#ffafcc', '#fb7185', '#ffffff']; // Valentine theme
+  const colors = (mode === "heart") ? heartColors : rectColors;
+
   confettiPieces = [];
   const count = 220;
 
   for (let i=0; i<count; i++){
     const isHeart = mode === "heart";
-    const size = isHeart ? (10 + Math.random()*14) : (6 + Math.random()*10);
+
+    // BIGGER hearts so the switch is obvious
+    const size = isHeart ? (18 + Math.random()*18) : (6 + Math.random()*10);
 
     confettiPieces.push({
       x: Math.random()*window.innerWidth,
-      y: -20 - Math.random()*window.innerHeight,
-      r: 3 + Math.random()*5,
+      y: isHeart
+          ? (window.innerHeight + 40 + Math.random()*window.innerHeight) // start from below screen
+          : (-20 - Math.random()*window.innerHeight),
       w: isHeart ? size : (6 + Math.random()*10),
       h: isHeart ? size : (8 + Math.random()*14),
-      vx: -2 + Math.random()*4,
-      vy: 2 + Math.random()*6,
+      vx: isHeart ? (-0.6 + Math.random()*1.2) : (-2 + Math.random()*4),
+      vy: isHeart ? (1.2 + Math.random()*2.8) : (2 + Math.random()*6),
       rot: Math.random()*Math.PI,
-      vr: -0.12 + Math.random()*0.24,
+      vr: isHeart ? (-0.05 + Math.random()*0.10) : (-0.12 + Math.random()*0.24),
       color: colors[(Math.random()*colors.length)|0],
       kind: mode
     });
   }
 }
+
     function drawHeart(ctx, size, color){
   // Simple heart path (centered roughly around 0,0)
   const s = size / 18; // scale factor
@@ -409,17 +417,22 @@
 
   for (const p of confettiPieces){
     p.x += p.vx;
-    p.y += p.vy;
 
-    // Hearts float a bit more gently
-    if (p.kind === "heart") {
-      p.vy = Math.min(p.vy + 0.01, 3.8);
-      p.vx += Math.sin((p.y + p.x) * 0.01) * 0.02; // subtle drift
-    }
+// Hearts float UP; rectangles fall DOWN
+if (p.kind === "heart") {
+  p.y -= p.vy; // go upward
+  p.vx += Math.sin((p.y + p.x) * 0.01) * 0.04; // more noticeable drift
+} else {
+  p.y += p.vy; // normal falling confetti
+}
 
     p.rot += p.vr;
 
-    if (p.y > window.innerHeight + 40) p.y = -20;
+    if (p.kind === "heart") {
+  if (p.y < -60) p.y = window.innerHeight + 60;
+} else {
+  if (p.y > window.innerHeight + 40) p.y = -20;
+}
     if (p.x < -40) p.x = window.innerWidth + 40;
     if (p.x > window.innerWidth + 40) p.x = -40;
 

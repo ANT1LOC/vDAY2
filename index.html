@@ -208,6 +208,19 @@
       opacity:.65;
       margin-top: 12px;
     }
+
+#celebrateMsg{
+  font-weight: 800;
+  display: inline-block;
+  animation: pulsePop 1.2s ease-in-out infinite;
+}
+
+@keyframes pulsePop{
+  0%   { transform: scale(1); }
+  45%  { transform: scale(1.08); }
+  70%  { transform: scale(0.98); }
+  100% { transform: scale(1); }
+}   
   </style>
 </head>
 
@@ -237,9 +250,9 @@
     <div class="modal">
       <div style="font-size:40px;">🎉💞✨</div>
       <h2 id="celebrateTitle">YAYYY!! It’s a date! 🥰</h2>
-      <p>
+      <p id="celebrateMsg">
         You just made my whole day.  
-        Now I owe you something sweet, something fun, and a memory we’ll keep.
+        I can't wait to see you this weekend!!! 💖✨
       </p>
       <div class="tiny">P.S. Screenshot this and text me “YES” 😌</div>
     </div>
@@ -335,6 +348,8 @@
 
     let confettiOn = false;
     let confettiPieces = [];
+    let confettiMode = "rect"; // "rect" then switches to "heart"
+
 
     function resize(){
       canvas.width = window.innerWidth * devicePixelRatio;
@@ -344,54 +359,101 @@
     window.addEventListener('resize', resize);
     resize();
 
-    function makeConfetti(){
-      const colors = ['#ff4d6d','#ffafcc','#ffd166','#06d6a0','#4cc9f0','#b5179e','#f72585','#fb7185'];
-      confettiPieces = [];
-      const count = 220;
-      for (let i=0; i<count; i++){
-        confettiPieces.push({
-          x: Math.random()*window.innerWidth,
-          y: -20 - Math.random()*window.innerHeight,
-          r: 3 + Math.random()*5,
-          w: 6 + Math.random()*10,
-          h: 8 + Math.random()*14,
-          vx: -2 + Math.random()*4,
-          vy: 2 + Math.random()*6,
-          rot: Math.random()*Math.PI,
-          vr: -0.15 + Math.random()*0.3,
-          color: colors[(Math.random()*colors.length)|0]
-        });
-      }
-    }
+    function makeConfetti(mode = "rect"){
+  confettiMode = mode;
 
+  const colors = ['#ff4d6d','#ffafcc','#ffd166','#06d6a0','#4cc9f0','#b5179e','#f72585','#fb7185'];
+  confettiPieces = [];
+  const count = 220;
+
+  for (let i=0; i<count; i++){
+    const isHeart = mode === "heart";
+    const size = isHeart ? (10 + Math.random()*14) : (6 + Math.random()*10);
+
+    confettiPieces.push({
+      x: Math.random()*window.innerWidth,
+      y: -20 - Math.random()*window.innerHeight,
+      r: 3 + Math.random()*5,
+      w: isHeart ? size : (6 + Math.random()*10),
+      h: isHeart ? size : (8 + Math.random()*14),
+      vx: -2 + Math.random()*4,
+      vy: 2 + Math.random()*6,
+      rot: Math.random()*Math.PI,
+      vr: -0.12 + Math.random()*0.24,
+      color: colors[(Math.random()*colors.length)|0],
+      kind: mode
+    });
+  }
+}
+    function drawHeart(ctx, size, color){
+  // Simple heart path (centered roughly around 0,0)
+  const s = size / 18; // scale factor
+
+  ctx.save();
+  ctx.scale(s, s);
+  ctx.beginPath();
+  ctx.moveTo(0, 6);
+  ctx.bezierCurveTo(0, 0, -9, 0, -9, 6);
+  ctx.bezierCurveTo(-9, 12, 0, 15, 0, 18);
+  ctx.bezierCurveTo(0, 15, 9, 12, 9, 6);
+  ctx.bezierCurveTo(9, 0, 0, 0, 0, 6);
+  ctx.closePath();
+  ctx.fillStyle = color;
+  ctx.fill();
+  ctx.restore();
+}
     function drawConfetti(){
-      if (!confettiOn) return;
-      ctx.clearRect(0,0,window.innerWidth, window.innerHeight);
-      for (const p of confettiPieces){
-        p.x += p.vx;
-        p.y += p.vy;
-        p.rot += p.vr;
-        if (p.y > window.innerHeight + 30) p.y = -20;
-        if (p.x < -30) p.x = window.innerWidth + 30;
-        if (p.x > window.innerWidth + 30) p.x = -30;
+  if (!confettiOn) return;
 
-        ctx.save();
-        ctx.translate(p.x, p.y);
-        ctx.rotate(p.rot);
-        ctx.fillStyle = p.color;
-        ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
-        ctx.restore();
-      }
-      requestAnimationFrame(drawConfetti);
+  ctx.clearRect(0,0,window.innerWidth, window.innerHeight);
+
+  for (const p of confettiPieces){
+    p.x += p.vx;
+    p.y += p.vy;
+
+    // Hearts float a bit more gently
+    if (p.kind === "heart") {
+      p.vy = Math.min(p.vy + 0.01, 3.8);
+      p.vx += Math.sin((p.y + p.x) * 0.01) * 0.02; // subtle drift
     }
 
+    p.rot += p.vr;
+
+    if (p.y > window.innerHeight + 40) p.y = -20;
+    if (p.x < -40) p.x = window.innerWidth + 40;
+    if (p.x > window.innerWidth + 40) p.x = -40;
+
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.rotate(p.rot);
+
+    if (p.kind === "heart") {
+      drawHeart(ctx, p.w, p.color);
+    } else {
+      ctx.fillStyle = p.color;
+      ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
+    }
+
+    ctx.restore();
+  }
+
+  requestAnimationFrame(drawConfetti);
+}
     function celebrate(){
-      overlay.style.display = 'grid';
-      confettiOn = true;
-      makeConfetti();
-      drawConfetti();
-    }
+  overlay.style.display = 'grid';
+  confettiOn = true;
 
+  // Start with classic confetti rectangles
+  makeConfetti("rect");
+  drawConfetti();
+
+  // After 3 seconds, switch to floating hearts
+  setTimeout(() => {
+    if (!confettiOn) return;
+    makeConfetti("heart");
+  }, 3000);
+}
+    
     yesBtn.addEventListener('click', celebrate);
     yesBtn.addEventListener('touchstart', (e) => {
       e.preventDefault();

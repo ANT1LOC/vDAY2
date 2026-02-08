@@ -330,7 +330,6 @@
 
     // --------- celebration + confetti ----------
     const overlay = document.getElementById('overlay');
-    const closeBtn = document.getElementById('closeBtn');
     const canvas = document.getElementById('confetti');
     const ctx = canvas.getContext('2d');
 
@@ -398,12 +397,6 @@
       e.preventDefault();
       celebrate();
     }, {passive:false});
-
-    closeBtn.addEventListener('click', () => {
-      // Keep it open-able, but stop confetti after a bit
-      overlay.style.display = 'none';
-      setTimeout(() => { confettiOn = false; ctx.clearRect(0,0,window.innerWidth, window.innerHeight); }, 300);
-    });
 
     // Start with "No" placed in default spot reliably inside the area
     // (Sometimes absolute positioning + right/top needs a nudge.)
